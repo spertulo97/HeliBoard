@@ -90,7 +90,12 @@ public interface KeyboardActionListener {
      * @return true if the request has been consumed, false otherwise.
      */
     boolean onCustomRequest(int requestCode);
-    void onMovePointer(int steps);
+    /**
+     * Called when .
+     * @return true if the step counter should reset.
+     */
+    boolean onHorizontalSpaceSwipe(int steps);
+    boolean onVerticalSpaceSwipe(int steps);
     void onMoveDeletePointer(int steps);
     void onUpWithDeletePointerActive();
 
@@ -122,7 +127,13 @@ public interface KeyboardActionListener {
             return false;
         }
         @Override
-        public void onMovePointer(int steps) {}
+        public boolean onHorizontalSpaceSwipe(int steps) {
+            return false;
+        }
+        @Override
+        public boolean onVerticalSpaceSwipe(int steps) {
+            return false;
+        }
         @Override
         public void onMoveDeletePointer(int steps) {}
         @Override

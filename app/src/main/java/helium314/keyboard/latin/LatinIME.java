@@ -1388,8 +1388,14 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     }
 
     @Override
-    public void onMovePointer(int steps) {
-        if (steps == 0) return;
+    public boolean onHorizontalSpaceSwipe(final int steps) {
+        if (mSettings.getCurrent().mSpaceTrackpadEnabled)
+            return onMovePointer(steps);
+        return false;
+    }
+
+    private boolean onMovePointer(int steps) {
+        if (steps == 0) return false;
         // for RTL languages we want to invert pointer movement
         if (mRichImm.getCurrentSubtype().isRtlSubtype())
             steps = -steps;
@@ -1405,7 +1411,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                     onCodeInput(Constants.CODE_LEFT, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
                     ++steps;
                 }
-                return;
+                return true;
             }
         } else {
             int availableCharacters = mInputLogic.mConnection.getTextAfterCursor(64, 0).length();
@@ -1415,7 +1421,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                     onCodeInput(Constants.CODE_RIGHT, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
                     --steps;
                 }
-                return;
+                return true;
             }
         }
 
@@ -1424,12 +1430,35 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             // this is a noticeable performance improvement
             int newPosition = mInputLogic.mConnection.mExpectedSelStart + moveSteps;
             mInputLogic.mConnection.setSelection(newPosition, newPosition);
-            return;
+            return true;
         }
         mInputLogic.finishInput();
         int newPosition = mInputLogic.mConnection.mExpectedSelStart + moveSteps;
         mInputLogic.mConnection.setSelection(newPosition, newPosition);
         mInputLogic.restartSuggestionsOnWordTouchedByCursor(mSettings.getCurrent(), mKeyboardSwitcher.getCurrentKeyboardScript());
+        return true;
+    }
+
+    @Override
+    public boolean onVerticalSpaceSwipe(final int steps) {
+        if (mSettings.getCurrent().mSpaceLanguageSlide)
+            return onLanguageSlide(steps);
+        return false;
+    }
+
+    private boolean onLanguageSlide(final int steps) {
+        if (Math.abs(steps) < 4)
+            return false;
+        List<InputMethodSubtype> subtypes = RichInputMethodManager.getInstance().getMyEnabledInputMethodSubtypeList(false);
+        if (subtypes.size() <= 1) { // only allow if we have more than one subtype
+            return false;
+        }
+        // decide next or previous dependent on up or down
+        InputMethodSubtype current = RichInputMethodManager.getInstance().getCurrentSubtype().getRawSubtype();
+        int wantedIndex = (subtypes.indexOf(current) + ((steps > 0) ? 1 : -1)) % subtypes.size();
+        if (wantedIndex < 0) wantedIndex += subtypes.size();
+        KeyboardSwitcher.getInstance().switchToSubtype(subtypes.get(wantedIndex));
+        return true;
     }
 
     @Override
